@@ -1,0 +1,200 @@
+---
+title: "HW05"
+author: "Feihong Jiang_121090230"
+date: "2024/11/20"
+output: html_document
+---
+# Q1
+
+```{r}
+
+yc = read.csv('D:/2025 Term 1/FIN4120 BY me/HW5/price_ttm.csv')
+yc$price_09.26.2017 = as.numeric(yc$price_09.26.2017)/100
+yc$yeild = -log(yc$price_09.26.2017)/yc$ttm
+tau = 3.33
+theta = yc$ttm
+
+sens0 = 1
+sens1 = (1-exp(-theta/tau))/(theta/tau)
+sens2 = (1-exp(-theta/tau))/(theta/tau)-exp(-theta/tau)
+tmp = data.frame(yc=yc$yeild,
+               sens0=sens0,
+               sens1=sens1,
+               sens2=sens2)
+
+rst = lm(tmp$yc ~ tmp$sens1+tmp$sens2)
+tmpcoef = rst$coefficients
+
+tenors = seq(0.01,30,0.01)
+term0 = tmpcoef[1]
+term1 = tmpcoef[2]*(1-exp(-tenors/tau))/(tenors/tau)
+term2 = tmpcoef[3]*((1-exp(-tenors/tau))/(tenors/tau)-exp(-tenors/tau))
+fitted_yield_curve = term0+term1+term2
+fit_yc = data.frame(yc=fitted_yield_curve,
+                  tenor=tenors)
+
+plot(fitted_yield_curve~tenors,type='l',
+     ylim = c(0,0.03),xlim = c(0,30),xlab = "tenor", ylab = "rate", main = "Fitted Yield Curve")
+par(new=T)
+plot(yc$yeild~theta,type='l',col="red",
+     ylim = c(0,0.03),xlim = c(0,30),xlab = "",ylab = "")
+print(fit_yc$yc[which(fit_yc$tenor==5)])
+```
+
+# Q3
+
+## a. Function
+```{r}
+Duration = function(pr,cpr,ttm,ytm){
+  cp = pr*cpr
+  q = 1/(1+ytm)
+  cfc = sum(cp*q^seq(1,ttm))
+  cfp = pr*q^ttm
+  price = cfc + cfp
+  
+  avgtime = sum(cp*q^seq(1,ttm)*seq(1,ttm)) + pr*q^ttm*ttm
+  macdur = avgtime/price
+  moddur = macdur*q
+  doldur = moddur*price
+  DV01 = doldur/10000
+  
+  rst=list(price=price, macaulay_duration=macdur, modified_duration=moddur, dollar_duration=doldur, DV01=DV01)
+  return(rst)
+}
+```
+
+## b. Calculation
+```{r}
+B1=c()
+y_c = c(0.05,0.07,0.0799,0.0801,0.09,0.11)
+for (i in 1:6) {
+  x = c(YTM=y_c[i],
+               prc=as.numeric(Duration(100,0.08,25,y_c[i])[1]),
+               McD=as.numeric(Duration(100,0.08,25,y_c[i])[2]),
+               MdD=as.numeric(Duration(100,0.08,25,y_c[i])[3]),
+               DD=as.numeric(Duration(100,0.08,25,y_c[i])[4]),
+               DV01=as.numeric(Duration(100,0.08,25,y_c[i])[5]))
+  B1 = rbind(B1,x)
+}
+B1 = as.data.frame(B1)
+B1$name = "bond1"
+
+B2=c()
+for (i in 1:6) {
+  x = c(YTM=y_c[i],
+               prc=as.numeric(Duration(100,0.08,5,y_c[i])[1]),
+               McD=as.numeric(Duration(100,0.08,5,y_c[i])[2]),
+               MdD=as.numeric(Duration(100,0.08,5,y_c[i])[3]),
+               DD=as.numeric(Duration(100,0.08,5,y_c[i])[4]),
+               DV01=as.numeric(Duration(100,0.08,5,y_c[i])[5]))
+  B2 = rbind(B2,x)
+}
+B2 = as.data.frame(B2)
+B2$name = "bond2"
+
+B3=c()
+for (i in 1:6) {
+  x = c(YTM=y_c[i],
+               prc=as.numeric(Duration(100,0.05,25,y_c[i])[1]),
+               McD=as.numeric(Duration(100,0.05,25,y_c[i])[2]),
+               MdD=as.numeric(Duration(100,0.05,25,y_c[i])[3]),
+               DD=as.numeric(Duration(100,0.05,25,y_c[i])[4]),
+               DV01=as.numeric(Duration(100,0.05,25,y_c[i])[5]))
+  B3 = rbind(B3,x)
+}
+B3 = as.data.frame(B3)
+B3$name = "bond3"
+
+B4=c()
+for (i in 1:6) {
+  x = c(YTM=y_c[i],
+               prc=as.numeric(Duration(100,0.05,5,y_c[i])[1]),
+               McD=as.numeric(Duration(100,0.05,5,y_c[i])[2]),
+               MdD=as.numeric(Duration(100,0.05,5,y_c[i])[3]),
+               DD=as.numeric(Duration(100,0.05,5,y_c[i])[4]),
+               DV01=as.numeric(Duration(100,0.05,5,y_c[i])[5]))
+  B4 = rbind(B4,x)
+}
+B4 = as.data.frame(B4)
+B4$name = "bond4"
+
+Bond = rbind(B1,B2,B3,B4)
+
+library(tidyr)
+library(dplyr)
+prc = Bond %>%
+  select(YTM,name,prc)
+prc = spread(prc,name,prc)
+
+McD = Bond %>%
+  select(YTM,name,McD)
+McD = spread(McD,name,McD)
+
+MdD = Bond %>%
+  select(YTM,name,MdD)
+MdD = spread(MdD,name,MdD)
+
+DD = Bond %>%
+  select(YTM,name,DD)
+DD = spread(DD,name,DD)
+
+DV01 = Bond %>%
+  select(YTM,name,DV01)
+DV01 = spread(DV01,name,DV01)
+
+prc
+McD
+MdD
+DD
+DV01
+```
+
+## c. Conclusion
+
+#### YTM: Macaulay Duaration, Modified Duration and Dollar Duration will all decrease when YTM is increasing.
+#### Coupon Rate: Macaulay Duaration and Modified Duration will both decrease when coupon rate is increasing, while Dollar Duration will increase when coupon rate is increasing.
+#### TTM: Macaulay Duaration, Modified Duration and Dollar Duration will all decrease when YTM is decreasing.
+
+## d. Amend function
+```{r}
+Duration_1 = function(pr,cpr,ttm,ytm,freq){
+  cp = pr*cpr/freq
+  q = 1/(1+ytm/freq)
+  cfc = sum(cp*q^seq(1,ttm*freq))
+  cfp = pr*q^(ttm*freq)
+  price = cfc + cfp
+  
+  avgtime = sum(cp*q^seq(1,ttm*freq)*seq(1/freq,ttm,by=1/freq)) + pr*ttm*q^(ttm*freq)
+  macdur = avgtime/price
+  moddur = macdur*q
+  doldur = moddur*price
+  DV01 = doldur/10000
+  
+  rst=list(price=price, macaulay_duration=macdur, modified_duration=moddur, dollar_duration=doldur, DV01=DV01)
+  return(rst)
+}
+
+Duration_1(100,0.2,2,0.04,2)
+```
+
+## e. Continuous
+```{r}
+Duration_con = function(pr,cpr,ttm,ytm){
+  cp = pr*cpr
+  cfc = sum(cp*exp(-seq(1,ttm)*ytm))
+  cfp = pr*exp(-ttm*ytm)
+  price = cfc + cfp
+  
+  avgtime = sum(cp*exp(-seq(1,ttm)*ytm)*seq(1,ttm)) + cfp*ttm
+  macdur = avgtime/price
+  moddur = macdur
+  doldur = moddur*price
+  DV01 = doldur/10000
+  
+  rst=list(price=price, macaulay_duration=macdur, modified_duration=moddur, dollar_duration=doldur, DV01=DV01)
+  return(rst)
+}
+Duration_con(100,0.1,2,0.04)[2]
+Duration_con(100,0.1,2,0.04)[3]
+```
+

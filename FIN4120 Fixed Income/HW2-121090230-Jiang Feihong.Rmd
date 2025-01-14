@@ -1,0 +1,205 @@
+---
+title: "HW02_FIN4120"
+author: "Jiang Feihong_121090230"
+date: "2024/10/21"
+output: html_document
+---
+# Q1
+
+### a. 
+$(1+\dfrac{R_{2}(0,1)}{2})^2$ = (1+$\dfrac{R_{2}(0,0.5)}{2}$)(1+$\dfrac{F_{2}(0,0.5,0.5)}{2}$)\
+$1.02625^2$ = 1.025(1+$\dfrac{F_{2}(0,0.5,0.5)}{2}$)\
+$F_{2}(0,0.5,0.5)$ = 5.5003%
+
+```{r}
+
+```
+
+
+### b.
+$(1+\dfrac{R_{2}(0,1.5)}{2})^3$ = (1+$\dfrac{R_{2}(0,0.5)}{2}$)$(1+\dfrac{F_{2}(0,0.5,1)}{2})^2$\
+$1.02875^3$ = 1.025$(1+\dfrac{F_{2}(0,0.5,1)}{2})^2$\
+$F_{2}(0,0.5,1)$ = 6.1260%
+
+### c. The cash flows are coupons of 5% in six months(5) and a year, and coupon plus principal payment of 105% (105) in 18 months. We can discount using the spot rates that we are given:
+P = $\dfrac{5}{(1+\dfrac{0.05}{2})}$+$\dfrac{5}{(1+\dfrac{0.0525}{2})^2}$+$\dfrac{105}{(1+\dfrac{0.0575}{2})^3}$ = 106.0661
+
+
+# Q2
+
+$R(0,1)$ = 0.07(first year spot rate)\
+$R(0,3)$ = 0.09(two year spot rate)\
+$F(0,1,2)$ = $F(0,1,3-1)$ = $[\dfrac{(1+R(0,3))^3}{(1+R(0,1))^1}]^\dfrac{1}{3-1}$-1 = 0.1001\
+P = $\dfrac{1}{(1+F(0,1,3))^2}$ = 0.8263
+
+# Q3
+
+### a. The par yield c(n) for maturity n is given by the formula
+$c(n)$ = $\dfrac{1-\dfrac{1}{(1+R(0,n))^n}}{\sum_{i=1}^{n}\dfrac{1}{(1+R(0,i))^i}}$
+
+### From this equation, we obtain the following par yields:
+```{r}
+fuc = function(n,r){
+  r = c(0.04,0.055,0.059,0.062,0.06382,0.0655,0.0665,0.06741,0.0683,0.069)
+  a = 0
+  for (i in (1:n)) {
+    a = a + 1/(1+r[i])^i
+  }
+  c = (1-1/(1+r[n])^n)/a
+  print(c)
+}
+fuc(1)
+fuc(2)
+fuc(3)
+fuc(4)
+fuc(5)
+fuc(6)
+fuc(7)
+fuc(8)
+fuc(9)
+fuc(10)
+```
+
+### b. F(0,x,y − x), the forward rate as seen from date t = 0, starting at date t = x, and with residual maturity y − x is defined as
+$F(0,x,y-x)$ =  $[\dfrac{(1+R(0,y))^y}{(1+R(0,x))^x}]^\dfrac{1}{y-x}$-1
+
+### From the previous equation, we obtain the forward yield curve in one year
+```{r}
+fuc.1 = function(n,r){
+  r = c(0.04,0.055,0.059,0.062,0.06382,0.0655,0.0665,0.06741,0.0683,0.069)
+  f = ((1+r[n+1])^(n+1)/(1+r[1]))^(1/n)-1
+  print(f)
+}
+fuc.1(1)
+fuc.1(2)
+fuc.1(3)
+fuc.1(4)
+fuc.1(5)
+fuc.1(6)
+fuc.1(7)
+fuc.1(8)
+fuc.1(9)
+```
+
+
+
+# Q4
+
+### a. Recall that the par yield c(n) for maturity n is given by the formula
+$c(n)$ = $\dfrac{1-\dfrac{1}{(1+R(0,n))^n}}{\sum_{i=1}^{n}\dfrac{1}{(1+R(0,i))^i}}$
+
+### Using this equation, we obtain the following par yields:
+```{r}
+fuc = function(n,r){
+  r = c(0.07,0.068,0.0662,0.0646,0.0633,0.0625,0.062,0.0616,0.06125,0.061)
+  a = 0
+  for (i in (1:n)) {
+    a = a + 1/(1+r[i])^i
+  }
+  c = (1-1/(1+r[n])^n)/a
+  print(c)
+}
+fuc(1)
+fuc(2)
+fuc(3)
+fuc(4)
+fuc(5)
+fuc(6)
+fuc(7)
+fuc(8)
+fuc(9)
+fuc(10)
+```
+
+### b. Recall that F(0,x,y − x), the forward rate as seen from date t = 0, starting at date t = x, and with residual maturity y − x is defined as
+$F(0,x,y-x)$ =  $[\dfrac{(1+R(0,y))^y}{(1+R(0,x))^x}]^\dfrac{1}{y-x}$-1
+
+### Using the previous equation, we obtain the forward yield curve in one year
+```{r}
+fuc.1 = function(n,r){
+  r = c(0.07,0.068,0.0662,0.0646,0.0633,0.0625,0.062,0.0616,0.06125,0.061)
+  f = ((1+r[n+1])^(n+1)/(1+r[1]))^(1/n)-1
+  print(f)
+}
+fuc.1(1)
+fuc.1(2)
+fuc.1(3)
+fuc.1(4)
+fuc.1(5)
+fuc.1(6)
+fuc.1(7)
+fuc.1(8)
+fuc.1(9)
+```
+
+
+# Q5
+```{r}
+data = c()
+theta = 1
+mu = 1.2
+sigma = 0.3
+z = rnorm(501,0,0.1)
+x = rep(0,501)
+for (n in -20:20) {
+  x[1] = n
+  for (i in 2:501){
+    x[i] = x[i-1] + theta*(mu-x[i-1])*0.01 + sigma*z[i]
+  }
+  data = cbind(data,x)
+}
+data  = as.data.frame(data)
+for (m in 1:ncol(data)) {
+  names(data)[m] = m
+}
+library(tidyr)
+library(dplyr)
+data.long = gather(data,group,value)
+data.long = data.long %>% group_by(group) %>%
+  mutate(time = c(1:501)) %>%
+  ungroup()
+data.long$group = as.factor(data.long$group)
+library(ggplot2)
+ggplot(data.long, aes(x = time, y = value, color = group))+
+  geom_line(size = 1)+geom_hline(yintercept= mu)
+
+
+```
+
+
+# Q6
+```{r}
+data = c()
+theta = 1
+mu = 1.2
+sigma = 0.3
+z = rnorm(1001,0,0.1)
+x = rep(0,1001)
+for (n in seq(from = 0, to = 4, by = 0.1)) {
+  x[1] = n
+  for (i in 2:1001){
+    if(x[i-1]>0){
+      x[i] = x[i-1] + theta*(mu-x[i-1])*0.01 + sigma*z[i]*x[i-1]^0.5
+    } else{
+      x[i] = x[i-1] + theta*(mu-x[i-1])*0.01
+    }
+  }
+  data = cbind(data,x)
+}
+data  = as.data.frame(data)
+for (m in 1:ncol(data)) {
+  names(data)[m] = m
+}
+library(tidyr)
+library(dplyr)
+data.long = gather(data,group,value)
+data.long = data.long %>% group_by(group) %>%
+  mutate(time = c(1:1001)) %>%
+  ungroup()
+data.long$group = as.factor(data.long$group)
+library(ggplot2)
+ggplot(data.long, aes(x = time, y = value, color = group))+
+  geom_line(size = 1)+geom_hline(yintercept= mu)
+
+```
+

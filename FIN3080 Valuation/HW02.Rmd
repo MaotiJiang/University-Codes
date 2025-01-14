@@ -1,0 +1,193 @@
+---
+title: "test"
+author: "RenZipeng_119020360"
+date: "2022/4/3"
+output: html_document
+---
+# Q1-Predict Missing Data
+
+```{r}
+library(dplyr)
+library(zoo)
+library(imputeTS)
+library(readxl)
+
+data = read.csv('C:/Users/任自芃/Desktop/FIN3080/HW/02/data/raw.csv')
+data = data %>% 
+  mutate(stockret = na_ma(data$stockret,k=2))
+data = data %>%
+  mutate(ret.rf = stockret-Shibor1,
+         mkt.rf = CSI800-Shibor1)
+
+library(tibbletime)
+win = 24
+roll.lm = rollify(.f = function(ret.rf,mkt.rf){
+  lm(ret.rf~mkt.rf)
+},window = win, unlist = F)
+
+library(purrr)
+library(broom)
+library(tidyr)
+reg = data %>%
+  arrange(yymm) %>%
+  mutate(model = roll.lm(ret.rf,mkt.rf)) %>%
+  slice(-1:-24) %>%
+  select(id,yymm,model) %>%
+  mutate(model = map(model,tidy)) %>%
+  unnest(model) %>%
+  ungroup()
+
+beta = reg %>% filter(term=='mkt.rf')
+beta.mkt = read_xlsx('C:/Users/任自芃/Desktop/FIN3080/HW/02/data/BETA_Mbeta.xlsx')
+beta.mkt = beta.mkt[-1:-2,]
+
+mktrf = data %>%
+  select(yymm,mkt.rf)
+beta = beta %>% left_join(mktrf,by='yymm')
+beta = beta %>% mutate(flag = ifelse(estimate<1&mkt.rf<0|estimate>1&mkt.rf>0,1,0))
+sum(beta$flag)/nrow(beta)
+beta = beta %>% mutate(flag2 = ifelse(estimate<1&mkt.rf<0,1,0)) %>%
+  mutate(flag1 = ifelse(mkt.rf<0,1,0))
+sum(beta$flag2)/sum(beta$flag1)
+(sum(beta$flag)-sum(beta$flag2))/(nrow(beta)-sum(beta$flag1))
+
+
+plot(beta$estimate~as.yearmon(as.factor(beta$yymm)),type='l',
+     xlab = '日期',
+     ylab = 'Beta',
+     main = '以24个月为窗口的Beta预测')
+lines(beta.mkt$Betaval~as.yearmon(as.factor(beta.mkt$Trdmnt)),type='l',
+     col='red')
+lines(beta.mkt$Betavals~as.yearmon(as.factor(beta.mkt$Trdmnt)),type='l',
+      col='blue')
+legend('topleft',
+       c('万科预测Beta值','万科分市场月Beta值','万科综合市场月Beta值'),
+       col=c('black','red','blue'),
+       lty=c(1,1,1))
+```
+
+# Q1-Remove Missing Data
+
+```{r}
+library(dplyr)
+library(zoo)
+library(imputeTS)
+library(readxl)
+
+data = read.csv('C:/Users/任自芃/Desktop/FIN3080/HW/02/data/raw.csv')
+data = data %>% na.omit()
+data = data %>%
+  mutate(ret.rf = stockret-Shibor1,
+         mkt.rf = CSI800-Shibor1)
+
+library(tibbletime)
+win = 24
+roll.lm = rollify(.f = function(ret.rf,mkt.rf){
+  lm(ret.rf~mkt.rf)
+},window = win, unlist = F)
+
+library(purrr)
+library(broom)
+library(tidyr)
+reg = data %>%
+  arrange(yymm) %>%
+  mutate(model = roll.lm(ret.rf,mkt.rf)) %>%
+  slice(-1:-24) %>%
+  select(id,yymm,model) %>%
+  mutate(model = map(model,tidy)) %>%
+  unnest(model) %>%
+  ungroup()
+
+beta = reg %>% filter(term=='mkt.rf')
+beta.mkt = read_xlsx('C:/Users/任自芃/Desktop/FIN3080/HW/02/data/BETA_Mbeta.xlsx')
+beta.mkt = beta.mkt[-1:-2,]
+
+mktrf = data %>%
+  select(yymm,mkt.rf)
+beta = beta %>% left_join(mktrf,by='yymm')
+beta = beta %>% mutate(flag = ifelse(estimate<1&mkt.rf<0|estimate>1&mkt.rf>0,1,0))
+sum(beta$flag)/nrow(beta)
+beta = beta %>% mutate(flag2 = ifelse(estimate<1&mkt.rf<0,1,0)) %>%
+  mutate(flag1 = ifelse(mkt.rf<0,1,0))
+sum(beta$flag2)/sum(beta$flag1)
+(sum(beta$flag)-sum(beta$flag2))/(nrow(beta)-sum(beta$flag1))
+
+
+
+plot(beta$estimate~as.yearmon(as.factor(beta$yymm)),type='l',
+     xlab = '日期',
+     ylab = 'Beta',
+     main = '以24个月为窗口的Beta预测')
+lines(beta.mkt$Betaval~as.yearmon(as.factor(beta.mkt$Trdmnt)),type='l',
+      col='red')
+lines(beta.mkt$Betavals~as.yearmon(as.factor(beta.mkt$Trdmnt)),type='l',
+      col='blue')
+legend('topleft',
+       c('万科预测Beta值','万科分市场月Beta值','万科综合市场月Beta值'),
+       col=c('black','red','blue'),
+       lty=c(1,1,1))
+```
+
+# Q2
+```{r}
+library(dplyr)
+library(zoo)
+library(imputeTS)
+library(readxl)
+
+stock = read_xlsx('C:/Users/任自芃/Desktop/FIN3080/HW/02/data/TRD_Mnth.xlsx')
+stock = stock[-1:-2,]
+colnames(stock) = c('id','yymm','ret')
+stock = stock %>% mutate(ret = as.numeric(ret))
+
+csi = read.csv('C:/Users/任自芃/Desktop/FIN3080/HW/02/data/CSI800/csi800.csv') 
+csi = csi %>% filter(yymm<='2021-05'&yymm>='2019-06') %>%
+  select(CSI800,yymm)
+data = csi %>% full_join(stock,by='yymm')
+
+shibor = read.csv('C:/Users/任自芃/Desktop/FIN3080/HW/02/data/Shibor/Shibor1.csv')
+shibor = shibor %>% filter(yymm<='2021-05'&yymm>='2019-06') %>%
+  select(Shibor1,yymm)
+data = data %>% full_join(shibor,by='yymm')
+
+data = data %>%
+  mutate(ret.rf = ret-Shibor1,
+         mkt.rf = CSI800-Shibor1)
+data = data %>% arrange(id)
+
+data1 = data %>% filter(is.na(ret))
+data1 = data1 %>% mutate(flag = ifelse(id==lag(id),1,0))
+sum(data1$flag,na.rm = T)
+
+data = data %>% na.omit()
+
+library(tidyr)
+library(purrr)
+library(broom)
+model = data %>%
+  group_by(id) %>% 
+  summarise(model= list(lm(ret.rf~mkt.rf))) %>% ungroup() %>%
+  mutate(model = map(model,tidy)) %>%
+  unnest(model) %>% ungroup()
+
+model1 = model %>% filter(is.na(estimate))
+
+beta = model %>% filter(term=='mkt.rf')
+beta = beta %>% mutate(flag = ifelse(is.na(estimate),0,1)) %>%
+  filter(flag==1)
+
+beta.d = density(beta$estimate)
+plot(beta.d,
+     xlab='beta',
+     ylab="",
+     yaxt='n',
+     main='Beta的分布')
+quantile(beta$estimate,0)
+quantile(beta$estimate,0.1)
+quantile(beta$estimate,0.25)
+quantile(beta$estimate,0.5)
+quantile(beta$estimate,0.75)
+quantile(beta$estimate,0.9)
+quantile(beta$estimate,1)
+```
+
